@@ -1,0 +1,81 @@
+version: '3.8'
+services:
+  # 1. Base de Datos (MySQL)
+  mysql_db:
+    image: mysql:8
+    container_name: innovatech_db
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=innovatech_prod
+    volumes:
+      - db_data_final:/var/lib/mysql
+    networks:
+      - backend_net
+    restart: always
+
+  # 2. Backend de Ventas
+  backend_ventas:
+    build:
+      context: ./back-Ventas_SpringBoot/Springboot-API-REST
+      dockerfile: Dockerfile
+    container_name: innovatech_backend_ventas
+    environment:
+      - DB_ENDPOINT=mysql_db
+      - DB_PORT=3306
+      - DB_NAME=innovatech_prod
+      - DB_USERNAME=root
+      - DB_PASSWORD=
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql_db
+    networks:
+      - backend_net
+      - frontend_net
+    restart: always
+
+  # 3. Backend de Despachos
+  backend_despachos:
+    build:
+      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+      dockerfile: Dockerfile
+    container_name: innovatech_backend_despachos
+    environment:
+      - DB_ENDPOINT=mysql_db
+      - DB_PORT=3306
+      - DB_NAME=innovatech_prod
+      - DB_USERNAME=root
+      - DB_PASSWORD=
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql_db
+    networks:
+      - backend_net
+      - frontend_net
+    restart: always
+
+  # 4. Frontend React
+  frontend:
+    build:
+      context: ./front_despacho
+      dockerfile: Dockerfile
+    container_name: innovatech_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend_ventas
+      - backend_despachos
+    networks:
+      - frontend_net
+    restart: always
+
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+
+volumes:
+  db_data_final:
+    driver: local
